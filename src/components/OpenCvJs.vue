@@ -1,7 +1,11 @@
 <template>
     <div>
         <div class="inputoutput">
-            <div class="caption"><input @change="inputChange" type="file" /></div>
+            <img :src="imgSrc" v-show="false" id="img" crossorigin="anymous" alt="">
+            <input type="text" v-model="imgSrc">
+            <button @click="loadImg">加载图片</button>
+            <button @click="$refs.fileInput.click()">选择图片</button>
+            <input ref="fileInput" @change="inputChange" v-show="false" type="file" />
         </div>
         <div>peopleNum: {{ peopleNum }}</div>
         <div class="inputoutput">
@@ -21,6 +25,7 @@
             return {
                 modules: ['haarcascade_frontalface_alt2', 'haarcascade_eye'],
                 peopleNum: 0,
+                imgSrc: ''
             };
         },
         created() {
@@ -86,12 +91,34 @@
                     gray.delete();
                 });
             },
+            async loadImg() {
+                let src = cv.imread('img');
+
+                const faceParams = {
+                    color: [255, 0, 0, 255],
+                    scaleFactor: 1.1,
+                    minNeighbors: 3,
+                    flags: 0,
+                };
+                const eyesParams = {
+                    color: [0, 0, 255, 255],
+                    scaleFactor: 1.1,
+                    minNeighbors: 7,
+                    flags: 0,
+                };
+                const [roiGray, peopleNum] = await this.markTarget(src, this.modules[0], faceParams, null);
+                this.peopleNum = peopleNum;
+                await this.markTarget(src, this.modules[1], eyesParams, roiGray, null, true);
+
+                cv.imshow('canvasOutput', src);
+                src.delete();
+            },
             async inputChange(e) {
                 if (e.target.files.length === 0) {
                     return false;
                 }
-                const file = e.target.files[0];
-                await utils.loadImageToCanvas(URL.createObjectURL(file), 'canvasInput');
+                const file = e?.target?.files[0];
+                await utils.loadImageToCanvas(URL.createObjectURL(file), 'canvasInput', window.innerWidth);
                 let src = cv.imread('canvasInput');
 
                 const faceParams = {
