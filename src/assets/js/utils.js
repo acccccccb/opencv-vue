@@ -54,7 +54,7 @@ function Utils(errorOutputId) {
         request.send();
     };
 
-    this.loadImageToCanvas = function (url, cavansId, maxWidth = 800) {
+    this.loadImageToCanvas = function (url, cavansId, maxWidth = 1600) {
         return new Promise((resolve) => {
             let canvas = document.getElementById(cavansId);
             let ctx = canvas.getContext('2d');

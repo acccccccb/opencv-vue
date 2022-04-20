@@ -1,15 +1,18 @@
 <template>
     <div id="app">
-        <OpenCvJs />
+        <!--<OCImg />-->
+        <OCVideo />
     </div>
 </template>
 
 <script>
-    import OpenCvJs from './components/OpenCvJs.vue';
+    // import OCImg from './components/OCImg.vue';
+    import OCVideo from './components/OCVideo.vue';
     export default {
         name: 'App',
         components: {
-            OpenCvJs,
+            // OCImg,
+            OCVideo,
         },
     };
 </script>

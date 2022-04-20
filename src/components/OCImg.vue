@@ -1,13 +1,13 @@
 <template>
     <div>
         <div class="inputoutput">
-            <img :src="imgSrc" v-show="false" id="img" crossorigin="anymous" alt="">
-            <input type="text" v-model="imgSrc">
+            <input type="text" v-model="imgSrc" />
             <button @click="loadImg">加载图片</button>
             <button @click="$refs.fileInput.click()">选择图片</button>
             <input ref="fileInput" @change="inputChange" v-show="false" type="file" />
         </div>
         <div>peopleNum: {{ peopleNum }}</div>
+
         <div class="inputoutput">
             <canvas id="canvasInput" v-show="false"></canvas>
             <canvas id="canvasOutput"></canvas>
@@ -20,12 +20,13 @@
     let utils = new Utils('errorMessage');
 
     export default {
-        name: 'OpenCvJs',
+        name: 'OCImg',
         data() {
             return {
                 modules: ['haarcascade_frontalface_alt2', 'haarcascade_eye'],
                 peopleNum: 0,
-                imgSrc: ''
+                imgSrc: 'http://placekitten.com/500/500',
+                maxWidth: 800,
             };
         },
         created() {
@@ -92,35 +93,35 @@
                 });
             },
             async loadImg() {
-                let src = cv.imread('img');
-
-                const faceParams = {
-                    color: [255, 0, 0, 255],
-                    scaleFactor: 1.1,
-                    minNeighbors: 3,
-                    flags: 0,
+                const maxWidth = 1200;
+                let canvas = document.getElementById('canvasInput');
+                let ctx = canvas.getContext('2d');
+                let img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                    const p = img.width / img.height;
+                    const width = img.width > maxWidth ? maxWidth : img.width;
+                    const height = width / p;
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+                    setTimeout(() => {
+                        this.analysisImg('canvasInput');
+                    }, 16);
                 };
-                const eyesParams = {
-                    color: [0, 0, 255, 255],
-                    scaleFactor: 1.1,
-                    minNeighbors: 7,
-                    flags: 0,
-                };
-                const [roiGray, peopleNum] = await this.markTarget(src, this.modules[0], faceParams, null);
-                this.peopleNum = peopleNum;
-                await this.markTarget(src, this.modules[1], eyesParams, roiGray, null, true);
-
-                cv.imshow('canvasOutput', src);
-                src.delete();
+                img.src = this.imgSrc;
+                // this.analysisImg('img');
             },
             async inputChange(e) {
                 if (e.target.files.length === 0) {
                     return false;
                 }
                 const file = e?.target?.files[0];
-                await utils.loadImageToCanvas(URL.createObjectURL(file), 'canvasInput', window.innerWidth);
-                let src = cv.imread('canvasInput');
-
+                await utils.loadImageToCanvas(URL.createObjectURL(file), 'canvasInput');
+                this.analysisImg('canvasInput');
+            },
+            async analysisImg(img) {
+                let src = cv.imread(img);
                 const faceParams = {
                     color: [255, 0, 0, 255],
                     scaleFactor: 1.1,
@@ -137,7 +138,20 @@
                 this.peopleNum = peopleNum;
                 await this.markTarget(src, this.modules[1], eyesParams, roiGray, null, true);
 
-                cv.imshow('canvasOutput', src);
+                console.log('src', src.size());
+                let imgWidth = src.size().width;
+                let imgHeight = src.size().height;
+                if (imgWidth > this.maxWidth) {
+                    const p = imgWidth / imgHeight;
+                    imgWidth = this.maxWidth;
+                    imgHeight = imgWidth / p;
+                }
+
+                let dst = new cv.Mat();
+                let dsize = new cv.Size(imgWidth, imgHeight);
+
+                cv.resize(src, dst, dsize, 0, 0, cv.INTER_AREA);
+                cv.imshow('canvasOutput', dst);
                 src.delete();
             },
         },
